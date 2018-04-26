@@ -42,7 +42,7 @@ The metrics displayed here is the heap size of the JVM, this is not very relevan
 
 ## How it works and how to improve it
 
-###Custom listener
+### Custom listener
 
 The different metrics (in our case the maximum memory) come from the events of Spark (in our case [onBlockManagerAdded](https://github.com/apache/spark/blob/20ca208bcda6f22fe7d9fb54144de435b4237536/core/src/main/scala/org/apache/spark/scheduler/SparkListener.scala#L93)). The custom listener extends the [SparkListener](https://github.com/apache/spark/blob/master/core/src/main/scala/org/apache/spark/scheduler/SparkListener.scala), which has all the methods intercepting Spark events.
 
