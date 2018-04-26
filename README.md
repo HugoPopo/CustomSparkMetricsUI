@@ -48,7 +48,7 @@ The different metrics (in our case the maximum memory) come from the events of S
 
 When overriding these methods (here [onBlockManagerAdded](https://github.com/apache/spark/blob/20ca208bcda6f22fe7d9fb54144de435b4237536/core/src/main/scala/org/apache/spark/scheduler/SparkListener.scala#L240)), you can get values from this event and collect new metrics.
 
-The metrics are stored in [StatusHolder](https://github.com/HugoPopo/CustomSparkMetricsUI/blob/2335a8ab868de3e5838bc7a1994f2f0bd5c89039/src/main/scala/CustomSparkListener.scala#L64). The only purpose of this object is to store the data you need to send to the UI, so you can structure your variables as you want, as long as you know how to retrieve it.
+The metrics are [stored](https://github.com/HugoPopo/CustomSparkMetricsUI/blob/2335a8ab868de3e5838bc7a1994f2f0bd5c89039/src/main/scala/CustomSparkListener.scala#L32) in [StatusHolder](https://github.com/HugoPopo/CustomSparkMetricsUI/blob/2335a8ab868de3e5838bc7a1994f2f0bd5c89039/src/main/scala/CustomSparkListener.scala#L64). The only purpose of this object is to store the data you need to send to the UI, so you can structure your variables as you want, as long as you know how to retrieve it.
 
 ### Custom UI
 
