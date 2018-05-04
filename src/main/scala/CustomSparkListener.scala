@@ -17,7 +17,11 @@
 
 package org.apache.spark
 
+import java.util.Observable
+
 import org.apache.spark.scheduler._
+
+import scala.collection.mutable
 // import org.apache.spark.executor.TaskMetrics
 
 /**
@@ -29,27 +33,48 @@ class CustomSparkListener extends SparkListener {
   }
 
   override def onBlockManagerAdded(blockManagerAdded: SparkListenerBlockManagerAdded): Unit = {
-    StatusHolder.maxMemory = blockManagerAdded.maxMem
-  }
-  override def onJobStart(jobStart: SparkListenerJobStart) {
-    // TODO
+    StatusHolder.updateStatus("maxMemory",blockManagerAdded.maxMem.asInstanceOf[AnyRef])
+    println(
+      s"""
+         |BlockManager ${blockManagerAdded.blockManagerId} added with ${blockManagerAdded.maxMem} max memory.
+       """.stripMargin)
   }
 
   override def onTaskStart(taskStart: SparkListenerTaskStart): Unit = {
     val info = taskStart.taskInfo
     if (info != null) {
-      println(s"""Task ${info.taskId} started""")
+      println(s"""
+           |Task ${info.taskId} started...
+           |""".stripMargin)
     }
   }
-  
+
+  /*
   override def onExecutorMetricsUpdate(metricsUpdate: SparkListenerExecutorMetricsUpdate) {
     if(metricsUpdate.accumUpdates.nonEmpty){
       println(s"Information is available for ${metricsUpdate.execId}:")
       for (i <- metricsUpdate.accumUpdates) {
         val accInfo: Seq[AccumulableInfo] = i._4
-        accInfo.foreach(u => println(s"Info: task:${i._1} stage:${i._2} id:${u.id} name:${u.name} update:${u.update.get}"))
+        accInfo.foreach(u => /*if(u.update.get != 0)*/ println(s"Info: task:${i._1} stage:${i._2} id:${u.id} name:${u.name} update:${u.update.get}"))
       }
     }
+  }
+  */
+
+  override def onBlockUpdated(blockUpdated: SparkListenerBlockUpdated): Unit = {
+    StatusHolder.updateStatus(s"BlockMemSize", blockUpdated.blockUpdatedInfo.memSize.asInstanceOf[AnyRef])
+    println(s"Block updated - id: ${blockUpdated.blockUpdatedInfo.blockId} memSize: ${blockUpdated.blockUpdatedInfo.memSize}")
+    // TODO: get blockId and pass it to sc
+  }
+
+  override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = {
+    StatusHolder.updateStatus("Executor added", executorAdded.executorId)
+  }
+
+  override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = {
+    println(s"""
+         |Task ${taskEnd.taskInfo.taskId} ended with status ${taskEnd.taskInfo.status}.
+         |""".stripMargin)
   }
 
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = {
@@ -61,7 +86,16 @@ class CustomSparkListener extends SparkListener {
  * An object containing all the values to be displayed or used in the
  * custom UI page
  */
-object StatusHolder {
-  var maxMemory: Long = -1
-}
+object StatusHolder extends Observable {
+  val status: mutable.HashMap[String, Any] = new mutable.HashMap[String, Any]
 
+  def updateStatus(label: String, value: Object): Unit = {
+    status.update(label, value)
+    notifyObservers(label)
+  }
+
+  override def notifyObservers(arg: scala.Any): Unit = {
+    setChanged()
+    super.notifyObservers(arg)
+  }
+}

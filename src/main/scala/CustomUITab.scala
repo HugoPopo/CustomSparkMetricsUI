@@ -17,11 +17,11 @@
 
 package org.apache.spark.ui
 
+import java.util.{Observable, Observer}
+
 import javax.servlet.http.HttpServletRequest
 
 import scala.xml.Node
-
-import org.apache.spark.ui.{SparkUI, SparkUITab, UIUtils, WebUI, WebUIPage}
 import org.apache.spark.StatusHolder
 import org.apache.spark.SparkContext
 
@@ -39,18 +39,27 @@ class CustomUITab(parent: SparkUI) extends SparkUITab(parent, "custom"){
  *
  * @param parent the tab the page is attached to
  */
-class CustomWebUIPage(parent: SparkUITab) extends WebUIPage("") {
+class CustomWebUIPage(parent: SparkUITab) extends WebUIPage("") with Observer {
   def render(request: HttpServletRequest): Seq[Node] = {
     val content =
       <div>
         {
           <p>This is a custom tab</p>
           <p>max memory
-            {StatusHolder.maxMemory}
+            {try {
+              StatusHolder.status.get("maxMemory")
+            } catch {
+              case null => "not defined"
+            }}
           </p>
         }
       </div>
       UIUtils.headerSparkPage("Custom", content, parent)
+  }
+
+  override def update(o: Observable, arg: scala.Any): Unit = {
+    val updatedValue = StatusHolder.status.get(arg.toString)
+    // TODO update the HTML
   }
 }
 
@@ -59,7 +68,13 @@ object SparkUIExtender {
   def extend(sparkContext: SparkContext): Unit = {
     val ui = sparkContext.ui
     if (ui.isDefined) {
-      ui.get.attachTab(new CustomUITab(ui.get))
+      val customUITab = new CustomUITab(ui.get)
+      ui.get.attachTab(customUITab)
+      customUITab.pages.foreach {
+        case page: CustomWebUIPage =>
+          StatusHolder.addObserver(page)
+        case _ =>
+      }
     }
   }
 }
